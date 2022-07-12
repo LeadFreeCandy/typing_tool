@@ -1,71 +1,62 @@
-use termion::event::Key;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::color::*;
+use std::fs;
+
+const SENTENCE: &'static str = "the quick brown fox jumps over the lazy dog";
+
+mod tui;
+use tui::*;
+
+mod data;
+use data::*;
 
 
-use std::io::{Write, stdout, stdin};
 
-const SENTENCE: &'static str = "The quick brown fox jumps over the lazy dog";
 fn main() {
 
 
-    let stdin = stdin();
-    let mut stdout = stdout().into_raw_mode().unwrap();
 
-    write!(stdout,
-           "{}{}{}{}\n{}{}{}",
-           Fg(Red),
-           termion::clear::All,
-           termion::cursor::Goto(1, 1),
+    // let mut data = Data::new();
 
-            SENTENCE,
-
-           termion::cursor::Goto(1, 1),
-           termion::cursor::BlinkingBar,
-           termion::cursor::Show,
-        //    termion::cursor::Hide)
-    )
-    .unwrap();
-    stdout.flush().unwrap();
+    // let s1 = tui::test_sentence(SENTENCE.to_string()).unwrap();
+    // data.add_sentence(s1);
+    let mut words = WordList::load();
+    tui::setup().unwrap();
 
 
+    //,{"letters":["b","o","s","s"],"delays":[91,160,143]}
 
-    for c in stdin.keys() {
-        // write!(stdout,
-        //        "{}{}",
-        //        termion::cursor::Goto(1, 1),
-        //        termion::clear::CurrentLine)
-        //         .unwrap();
-
-        match c.unwrap() {
-            
-            // Key::Ctrl('c') => break,
-            Key::Esc => {
-                write!(stdout,
-                    "{}",
-                    Fg(White),
-                 //    termion::cursor::Hide)
-             )
-             .unwrap();
-             break
-            },
-            // Key::Char(c) => print!("{}", c),
-            Key::Char('\n') => {},
-            Key::Char(c) => {
-                write!(stdout,
-                    "{}{}",
-                    Fg(Green),
-                    c,
-                 //    termion::cursor::Hide)
-             )
-             .unwrap();
-            }
-            
-            _ => {}
-        }
-        stdout.flush().unwrap();
+    let mut data = Data::load().unwrap_or_else(|_| {Data::new()});
+    if data.sentences().is_empty(){
+        let s1 = tui::test_sentence(SENTENCE.to_string()).unwrap();
+        data.add_sentence(s1);
     }
 
-    // write!(stdout, "{}", termion::cursor::Show).unwrap();
+    //"czech"), (30366, "broadcast"), (29560, "brook"), (28660, "broke"), (28460, "broad"
+    
+    let word = "attorney";
+
+    let word_delay = data.estimate_word_time_fast(word.chars().collect());
+    // let word_delay_sum = data.estimate_word_time_fast_shallow(word.chars().collect());
+
+    println!("delay: {}", word_delay);
+
+    for i in 0..1 {
+        words.sort_words(&data);
+        let s1 = tui::test_sentence(words.get_sentence(17)).unwrap();
+        data.add_sentence(s1);
+    }
+    
+
+
+
+    
+    
+    // data.add_sentence(s2);
+
+    // let word_delay = data.estimate_word_time_fast("abczabc".chars().collect()); //4795
+
+    // println!("{:?}", word_delay);
+
+
+    data.save().unwrap();
+
 }
